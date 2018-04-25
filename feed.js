@@ -1,6 +1,9 @@
 var events = require('events')
 var inherits = require('inherits')
-var varint = require('varint')
+
+//var varint = require('varint')
+var varint = M[`protobuf.varint`]
+
 var messages = require('./messages')
 
 module.exports = Feed
