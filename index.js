@@ -5,6 +5,8 @@ var sodium = require('sodium-universal')
 var indexOf = require('sorted-indexof')
 var feed = require('./feed')
 var messages = require('./messages')
+var bufferAlloc = require('buffer-alloc-unsafe')
+var bufferFrom = require('buffer-from')
 
 module.exports = Protocol
 
@@ -13,6 +15,7 @@ function Protocol (opts) {
   if (!opts) opts = {}
 
   stream.Duplex.call(this)
+  var self = this
 
   this.id = opts.id || randomBytes(32)
   this.live = !!opts.live
@@ -41,7 +44,7 @@ function Protocol (opts) {
   this._xor = null
   this._remoteXor = null
   this._needsKey = false
-  this._length = new Buffer(varint.encodingLength(8388608))
+  this._length = bufferAlloc(varint.encodingLength(8388608))
   this._missing = 0
   this._buf = null
   this._pointer = 0
@@ -51,12 +54,22 @@ function Protocol (opts) {
   this._interval = null
   this._keepAlive = 0
   this._remoteKeepAlive = 0
+  this._maybeFinalize = maybeFinalize
 
   if (opts.timeout !== 0 && opts.timeout !== false) this.setTimeout(opts.timeout || 5000, this._ontimeout)
   this.on('finish', this.finalize)
+
+  function maybeFinalize (err) {
+    if (err) return self.destroy(err)
+    if (!self.expectedFeeds) self.finalize()
+  }
 }
 
 inherits(Protocol, stream.Duplex)
+
+Protocol.prototype._prefinalize = function () {
+  if (!this.emit('prefinalize', this._maybeFinalize)) this.finalize()
+}
 
 Protocol.prototype.setTimeout = function (ms, ontimeout) {
   if (this.destroyed) return
@@ -196,7 +209,7 @@ Protocol.prototype._kick = function () {
 
 Protocol.prototype.ping = function () {
   if (!this.key) return true
-  var ping = new Buffer([0])
+  var ping = bufferFrom([0])
   if (this._xor) this._xor.update(ping, ping)
   return this.push(ping)
 }
@@ -376,7 +389,7 @@ Protocol.prototype._parseMessage = function (data, start) {
   }
 
   if (!this._buf) {
-    this._buf = new Buffer(this._missing)
+    this._buf = bufferAlloc(this._missing)
     this._pointer = 0
   }
 
@@ -456,7 +469,7 @@ function decodeFeed (data, start, end) {
 function encodeFeed (feed, id) {
   var header = id << 4
   var len = varint.encodingLength(header) + messages.Feed.encodingLength(feed)
-  var box = new Buffer(varint.encodingLength(len) + len)
+  var box = bufferAlloc(varint.encodingLength(len) + len)
   var offset = 0
 
   varint.encode(len, box, offset)
@@ -470,13 +483,13 @@ function encodeFeed (feed, id) {
 }
 
 function discoveryKey (key) {
-  var buf = new Buffer(32)
-  sodium.crypto_generichash(buf, new Buffer('hypercore'), key)
+  var buf = bufferAlloc(32)
+  sodium.crypto_generichash(buf, bufferFrom('hypercore'), key)
   return buf
 }
 
 function randomBytes (n) {
-  var buf = new Buffer(n)
+  var buf = bufferAlloc(n)
   sodium.randombytes_buf(buf)
   return buf
 }
