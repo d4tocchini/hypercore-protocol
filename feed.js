@@ -5,6 +5,7 @@ var inherits = require('inherits')
 var varint = M[`protobuf.varint`]
 
 var messages = require('./messages')
+var bufferAlloc = require('buffer-alloc-unsafe')
 
 module.exports = Feed
 
@@ -70,7 +71,7 @@ Feed.prototype.extension = function (type, message) {
 
   var header = this.header | 15
   var len = this.headerLength + varint.encodingLength(id) + message.length
-  var box = new Buffer(varint.encodingLength(len) + len)
+  var box = bufferAlloc(varint.encodingLength(len) + len)
   var offset = 0
 
   varint.encode(len, box, offset)
@@ -106,7 +107,7 @@ Feed.prototype.close = function () {
     if (this.stream.destroyed) return
     if (this.stream.expectedFeeds <= 0 || --this.stream.expectedFeeds) return
 
-    this.stream.finalize()
+    this.stream._prefinalize()
   }
 }
 
@@ -118,7 +119,7 @@ Feed.prototype._onclose = function () {
     this.close()
     if (this.remoteId > -1) this.stream._remoteFeeds[this.remoteId] = null
     var hex = this.discoveryKey.toString('hex')
-    if (this._feeds[hex] === this) delete this._feeds[hex]
+    if (this.stream._feeds[hex] === this) delete this.stream._feeds[hex]
   }
 
   if (this.peer) this.peer.onclose()
@@ -202,7 +203,7 @@ Feed.prototype._emit = function (type, message) {
 Feed.prototype._send = function (type, enc, message) {
   var header = this.header | type
   var len = this.headerLength + enc.encodingLength(message)
-  var box = new Buffer(varint.encodingLength(len) + len)
+  var box = bufferAlloc(varint.encodingLength(len) + len)
   var offset = 0
 
   varint.encode(len, box, offset)

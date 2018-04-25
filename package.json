@@ -1,9 +1,11 @@
 {
   "name": "hypercore-protocol",
-  "version": "6.5.1",
+  "version": "6.6.4",
   "description": "Stream that implements the hypercore protocol",
   "main": "index.js",
   "dependencies": {
+    "buffer-alloc-unsafe": "^1.0.0",
+    "buffer-from": "^1.0.0",
     "inherits": "^2.0.3",
     "readable-stream": "^2.2.6",
     "sodium-universal": "^2.0.0",
@@ -18,11 +20,6 @@
   "scripts": {
     "test": "standard && tape test.js",
     "protobuf": "protocol-buffers schema.proto -o messages.js"
-  },
-  "browserify": {
-    "transform": [
-      "brfs"
-    ]
   },
   "repository": {
     "type": "git",
