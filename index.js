@@ -1,6 +1,9 @@
 var stream = require('readable-stream')
 var inherits = require('inherits')
-var varint = require('varint')
+
+//var varint = require('varint')
+var varint = M[`protobuf.varint`]
+
 var sodium = require('sodium-universal')
 var indexOf = require('sorted-indexof')
 var feed = require('./feed')
