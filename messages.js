@@ -5,9 +5,7 @@
 /* eslint-disable no-redeclare */
 
 // Remember to `npm install --save protocol-buffers-encodings`
-//var encodings = require('protocol-buffers-encodings')
-var encodings = M[`protobuf.encodings`]
-
+var encodings = require('protocol-buffers-encodings')
 var varint = encodings.varint
 var skip = encodings.skip
 
